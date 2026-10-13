@@ -192,7 +192,7 @@ export const ApprovalsPage: React.FC = () => {
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-3">
                     <button
                       onClick={() => handleApprove(approval.id)}
-                      className="w-full sm:w-auto flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:opacity-95 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                      className="w-full sm:w-auto flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-linear-to-r from-emerald-600 to-teal-500 hover:opacity-95 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
                     >
                       <Check className="w-4 h-4" />
                       <span>Approve & Proceed to PayPal Checkout (${approval.approved_amount})</span>

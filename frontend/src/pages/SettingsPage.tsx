@@ -163,7 +163,7 @@ export const SettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-violet-600 to-cyan-500 hover:opacity-95 shadow-md flex items-center gap-2 transition-all"
+            className="px-6 py-3 rounded-xl font-bold text-xs text-white bg-linear-to-r from-violet-600 to-cyan-500 hover:opacity-95 shadow-md flex items-center gap-2 transition-all"
           >
             <Save className="w-4 h-4" />
             <span>{saving ? 'Saving Preferences...' : 'Save Governance Policies'}</span>

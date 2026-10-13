@@ -68,7 +68,7 @@ export const DashboardPage: React.FC = () => {
           </button>
           <Link
             to="/workspace"
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-cyan-500 hover:opacity-95 shadow-md shadow-violet-600/20 flex items-center gap-1.5 transition-all"
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-linear-to-r from-violet-600 to-cyan-500 hover:opacity-95 shadow-md shadow-violet-600/20 flex items-center gap-1.5 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>New Commerce Task</span>
@@ -242,7 +242,7 @@ export const DashboardPage: React.FC = () => {
 
         {/* Right Col: Quick 3-Minute Demo Launcher Card */}
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-violet-950/40 via-slate-900/90 to-cyan-950/40 border border-violet-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+          <div className="bg-linear-to-br from-violet-950/40 via-slate-900/90 to-cyan-950/40 border border-violet-500/30 rounded-2xl p-6 shadow-xl space-y-4">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-violet-500/30 bg-violet-950/60 text-violet-300 text-xs font-medium">
               <Sparkles className="w-3 h-3 text-cyan-400" />
               <span>3-Minute Master Demo Flow</span>
@@ -255,7 +255,7 @@ export const DashboardPage: React.FC = () => {
 
             <Link
               to="/workspace?demo=true"
-              className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-md flex items-center justify-center gap-2 transition-all block text-center"
+              className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-linear-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-md flex items-center justify-center gap-2 transition-all text-center"
             >
               <span>Launch 3-Minute Master Demo</span>
               <ArrowRight className="w-3.5 h-3.5 inline" />

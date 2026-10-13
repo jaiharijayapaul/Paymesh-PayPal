@@ -25,7 +25,7 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative overflow-hidden pt-20 pb-24 md:pt-28 md:pb-32">
         {/* Futuristic Ambient Glow Backgrounds */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-violet-600/20 via-cyan-500/20 to-transparent blur-3xl pointer-events-none rounded-full" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-150 h-87.5 bg-linear-to-tr from-violet-600/20 via-cyan-500/20 to-transparent blur-3xl pointer-events-none rounded-full" />
         <div className="absolute top-10 left-10 w-72 h-72 bg-violet-600/10 blur-3xl pointer-events-none rounded-full" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
@@ -46,7 +46,7 @@ export const LandingPage: React.FC = () => {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/workspace"
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 transition-all shadow-xl shadow-violet-600/25 flex items-center justify-center gap-2 group"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-linear-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 transition-all shadow-xl shadow-violet-600/25 flex items-center justify-center gap-2 group"
             >
               <span>Launch AI Command Workspace</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -96,7 +96,7 @@ export const LandingPage: React.FC = () => {
                 <div className="font-semibold text-xs text-white">Negotiation Agent</div>
                 <p className="text-[11px] text-slate-400">Negotiates $110 down to $98 against merchant floor.</p>
               </div>
-              <div className="bg-slate-950/60 border border-emerald-500/30 rounded-xl p-3.5 space-y-1 bg-emerald-950/10">
+              <div className="border border-emerald-500/30 rounded-xl p-3.5 space-y-1 bg-emerald-950/20">
                 <div className="text-[11px] font-mono text-emerald-400 uppercase">Human Approval</div>
                 <div className="font-semibold text-xs text-white">PayPal Checkout</div>
                 <p className="text-[11px] text-slate-300">Mandatory human click authorizes $98 PayPal order.</p>

@@ -146,7 +146,7 @@ export const ProviderDetailsPage: React.FC = () => {
           <div className="pt-4">
             <button
               onClick={() => navigate(`/workspace?demo=true`)}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-white bg-linear-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-lg shadow-violet-600/25 flex items-center justify-center gap-2"
             >
               <Bot className="w-4 h-4" />
               <span>Delegate Project to AI Agent for this Provider</span>

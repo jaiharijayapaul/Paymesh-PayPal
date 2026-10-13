@@ -145,7 +145,7 @@ export const WorkspacePage: React.FC = () => {
             <button
               type="submit"
               disabled={loading || !prompt.trim()}
-              className="absolute right-3 bottom-3 px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-md shadow-violet-600/20 flex items-center gap-2 transition-all disabled:opacity-40"
+              className="absolute right-3 bottom-3 px-5 py-2.5 rounded-xl font-semibold text-xs text-white bg-linear-to-r from-violet-600 via-indigo-600 to-cyan-500 hover:opacity-95 shadow-md shadow-violet-600/20 flex items-center gap-2 transition-all disabled:opacity-40"
             >
               {loading ? (
                 <>
@@ -337,7 +337,7 @@ export const WorkspacePage: React.FC = () => {
 
             {/* Human Approval Center & PayPal Card */}
             {currentApproval && (
-              <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-cyan-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
+              <div className="bg-linear-to-br from-slate-900 via-slate-900 to-indigo-950/40 border border-cyan-500/30 rounded-2xl p-6 shadow-2xl space-y-5">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-cyan-400" />
@@ -377,7 +377,7 @@ export const WorkspacePage: React.FC = () => {
                     <button
                       onClick={handleApprove}
                       disabled={loading}
-                      className="w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:opacity-95 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                      className="w-full py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-linear-to-r from-emerald-600 to-teal-500 hover:opacity-95 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
                     >
                       <UserCheck className="w-4 h-4" />
                       <span>Approve Transaction (${currentApproval.approved_amount}) & Unlock PayPal</span>
