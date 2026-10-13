@@ -1,8 +1,13 @@
 import re
+import json
+import logging
 from decimal import Decimal
 from typing import Optional
+import httpx
 from app.schemas.task import IntentExtractionResult
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class IntentAgent:
@@ -19,6 +24,75 @@ class IntentAgent:
 
     @classmethod
     def extract_intent(cls, prompt: str) -> IntentExtractionResult:
+        """Extracts intent using Google Gemini API if configured, otherwise deterministic rule parser."""
+        if settings.AI_PROVIDER == "gemini" and settings.GEMINI_API_KEY:
+            try:
+                gemini_result = cls._extract_with_gemini(prompt)
+                if gemini_result:
+                    return gemini_result
+            except Exception as e:
+                logger.warning(f"Gemini API invocation encountered error: {str(e)}. Falling back to deterministic engine.")
+
+        return cls._extract_with_rules(prompt)
+
+    @classmethod
+    def _extract_with_gemini(cls, prompt: str) -> Optional[IntentExtractionResult]:
+        """Calls Google Gemini API with JSON structured instructions."""
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        
+        system_instructions = (
+            "You are an AI Commerce Intent Extraction Agent. Extract parameters from the user's service request.\n"
+            "Return strictly valid JSON with keys:\n"
+            "- service_category (must be one of: logo_design, web_development, video_editing, ai_automation, presentation_design, content_writing)\n"
+            "- title (concise professional project title)\n"
+            "- max_budget (number, e.g. 100.00)\n"
+            "- currency (standard 3-letter currency code, default USD)\n"
+            "- deadline_days (integer days required)\n"
+            "- min_rating (number, e.g. 4.5)\n"
+            "- preferences (short summary of user preferences)\n"
+        )
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": f"{system_instructions}\n\nUser request: \"{prompt}\""}
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.1,
+                "responseMimeType": "application/json"
+            }
+        }
+
+        with httpx.Client(timeout=8.0) as client:
+            resp = client.post(url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                text_content = data["candidates"][0]["content"]["parts"][0]["text"]
+                parsed = json.loads(text_content)
+                
+                cat = parsed.get("service_category", "logo_design")
+                if cat not in cls.CATEGORIES:
+                    cat = "logo_design"
+
+                return IntentExtractionResult(
+                    service_category=cat,
+                    title=parsed.get("title", f"{cat.replace('_', ' ').title()} Project"),
+                    max_budget=Decimal(str(parsed.get("max_budget", 100.00))),
+                    currency=parsed.get("currency", "USD"),
+                    deadline_days=int(parsed.get("deadline_days", 3)),
+                    min_rating=Decimal(str(parsed.get("min_rating", 4.00))),
+                    preferences=parsed.get("preferences", "Extracted via Google Gemini"),
+                    confidence_score=0.99,
+                    clarification_needed=False,
+                    clarification_question=None
+                )
+        return None
+
+    @classmethod
+    def _extract_with_rules(cls, prompt: str) -> IntentExtractionResult:
         lowered = prompt.lower()
         
         # 1. Detect Category

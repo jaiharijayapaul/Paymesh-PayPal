@@ -6,7 +6,7 @@ from app.models.approval import Approval
 from app.models.payment import Payment
 
 
-def test_paypal_order_and_capture_workflow(client, db, auth_headers, test_user, test_provider):
+def test_paypal_order_and_capture_workflow(client, db, auth_headers, test_user, test_provider, monkeypatch):
     task = Task(
         user_id=test_user.id,
         title="Payment Test Task",
@@ -61,6 +61,24 @@ def test_paypal_order_and_capture_workflow(client, db, auth_headers, test_user, 
     assert "paypal_order_id" in order_data
     payment_id = order_data["payment_id"]
     paypal_order_id = order_data["paypal_order_id"]
+
+    # Mock server-side capture response as per Section 10 of specification
+    async def mock_capture(order_id: str):
+        return {
+            "id": order_id,
+            "status": "COMPLETED",
+            "payer": {"email_address": "sandbox-buyer@paymesh.ai"},
+            "purchase_units": [
+                {
+                    "payments": {
+                        "captures": [
+                            {"id": f"CAP-{order_id[-6:]}", "status": "COMPLETED", "amount": {"value": "98.00", "currency_code": "USD"}}
+                        ]
+                    }
+                }
+            ]
+        }
+    monkeypatch.setattr("app.services.payments.paypal_service.PayPalService.capture_order", mock_capture)
 
     # Step 2: Capture PayPal Order server-side
     capture_res = client.post(
