@@ -83,6 +83,12 @@ async def create_paypal_order(
     db.commit()
     db.refresh(payment)
 
+    approval_url = None
+    for link in order_data.get("links", []):
+        if link.get("rel") == "approve":
+            approval_url = link.get("href")
+            break
+
     return PayPalOrderResponse(
         payment_id=payment.id,
         paypal_order_id=paypal_order_id,
@@ -90,7 +96,8 @@ async def create_paypal_order(
         amount=approval.approved_amount,
         currency=approval.currency,
         approval_id=approval.id,
-        client_id=settings.PAYPAL_CLIENT_ID or "sb"
+        client_id=settings.PAYPAL_CLIENT_ID or "sb",
+        approval_url=approval_url
     )
 
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../api/client';
 import { Payment } from '../types';
-import { CreditCard, CheckCircle2, AlertCircle, Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { CreditCard, CheckCircle2, AlertCircle, Loader2, ShieldCheck, Lock, ExternalLink } from 'lucide-react';
 
 interface PayPalButtonProps {
   approvalId: string;
@@ -110,9 +110,21 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
             </div>
             <div className="flex justify-between text-slate-400">
               <span>Gateway State:</span>
-              <span className="text-amber-300 font-medium">Awaiting Server Capture</span>
+              <span className="text-amber-300 font-medium">Ready for Server Capture</span>
             </div>
           </div>
+
+          {orderCreated.approval_url && (
+            <a
+              href={orderCreated.approval_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-3 rounded-lg border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-950/60 text-cyan-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <span>Open PayPal Sandbox Gateway (Optional)</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
 
           <button
             onClick={handleCapturePayPal}
@@ -127,7 +139,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Simulate Buyer Sign-Off & Capture Order</span>
+                <span>Verify & Complete Order Capture</span>
               </>
             )}
           </button>

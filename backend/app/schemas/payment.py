@@ -16,6 +16,7 @@ class PayPalOrderResponse(BaseModel):
     currency: str
     approval_id: str
     client_id: str
+    approval_url: Optional[str] = None
 
 
 class CapturePaymentRequest(BaseModel):
