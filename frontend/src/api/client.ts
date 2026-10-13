@@ -12,7 +12,18 @@ import {
   AgentAction
 } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const formatApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  if (url.endsWith('/')) {
+    url = url.slice(0, -1);
+  }
+  if (!url.endsWith('/api/v1')) {
+    url = `${url}/api/v1`;
+  }
+  return url;
+};
+
+const BASE_URL = formatApiUrl();
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('paymesh_token');
