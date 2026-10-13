@@ -26,6 +26,17 @@ async def lifespan(app: FastAPI):
     # Ensure database schema tables exist
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
+    try:
+        from seed import seed_database
+        from app.db.session import SessionLocal
+        from app.models.provider import Provider
+        db = SessionLocal()
+        if db.query(Provider).count() == 0:
+            logger.info("Auto-seeding demo marketplace providers...")
+            seed_database()
+        db.close()
+    except Exception as e:
+        logger.warning(f"Auto-seed check: {e}")
     logger.info("PayMesh API initialized successfully.")
     yield
 
