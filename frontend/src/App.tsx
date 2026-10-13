@@ -13,6 +13,7 @@ import { ApprovalsPage } from './pages/ApprovalsPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 export function App() {
@@ -25,6 +26,7 @@ export function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/payments/success" element={<PaymentSuccessPage />} />
 
           {/* Protected Dashboard Routes */}
           <Route element={<DashboardLayout />}>

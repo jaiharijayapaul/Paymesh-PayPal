@@ -85,6 +85,17 @@ class PayPalService:
         token = await cls.get_access_token()
         formatted_amount = f"{amount:.2f}"
 
+        # Safely resolve single frontend redirect URL
+        frontend_url = (settings.FRONTEND_URL or "https://paymesh-pay-pal.vercel.app").strip()
+        if "," in frontend_url:
+            parts = [p.strip() for p in frontend_url.split(",") if p.strip()]
+            https_parts = [p for p in parts if p.startswith("https://")]
+            frontend_url = https_parts[0] if https_parts else parts[-1]
+        if frontend_url.endswith("/"):
+            frontend_url = frontend_url[:-1]
+        if not frontend_url.startswith("http"):
+            frontend_url = f"https://{frontend_url}"
+
         payload = {
             "intent": "CAPTURE",
             "purchase_units": [
@@ -102,8 +113,8 @@ class PayPalService:
                 "brand_name": "PayMesh AI Commerce",
                 "landing_page": "NO_PREFERENCE",
                 "user_action": "PAY_NOW",
-                "return_url": f"{settings.FRONTEND_URL}/payments/success",
-                "cancel_url": f"{settings.FRONTEND_URL}/payments/cancel"
+                "return_url": f"{frontend_url}/payments/success",
+                "cancel_url": f"{frontend_url}/payments/cancel"
             }
         }
 
