@@ -4,24 +4,55 @@ import { Payment, Order } from '../types';
 import {
   Receipt,
   PackageCheck,
-  CreditCard
+  CreditCard,
+  Zap,
+  Radio,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  X,
+  Loader2,
+  Terminal,
+  Send
 } from 'lucide-react';
+
+interface WebhookItem {
+  id: string;
+  paypal_event_id: string;
+  event_type: string;
+  resource_type: string;
+  summary: string;
+  status: string;
+  created_at: string;
+}
 
 export const TransactionsPage: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [webhooks, setWebhooks] = useState<WebhookItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'payments'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'payments' | 'webhooks'>('orders');
+
+  // Webhook Simulator Modal State
+  const [showSimModal, setShowSimModal] = useState(false);
+  const [simEventType, setSimEventType] = useState('PAYMENT.CAPTURE.COMPLETED');
+  const [simAmount, setSimAmount] = useState('98.00');
+  const [simTargetPaymentId, setSimTargetPaymentId] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simResult, setSimResult] = useState<any | null>(null);
+  const [simError, setSimError] = useState<string | null>(null);
 
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const [payData, orderData] = await Promise.all([
+      const [payData, orderData, whData] = await Promise.all([
         api.payments.list(),
         api.payments.listOrders(),
+        api.webhooks.listEvents().catch(() => []),
       ]);
       setPayments(payData);
       setOrders(orderData);
+      setWebhooks(whData);
     } catch (err) {
       console.error('Failed to load transaction data:', err);
     } finally {
@@ -33,6 +64,28 @@ export const TransactionsPage: React.FC = () => {
     fetchRecords();
   }, []);
 
+  const handleSimulateWebhook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSimulating(true);
+    setSimError(null);
+    setSimResult(null);
+
+    try {
+      const res = await api.webhooks.simulate({
+        event_type: simEventType,
+        payment_id: simTargetPaymentId || undefined,
+        amount: simAmount,
+        currency: 'USD',
+      });
+      setSimResult(res);
+      fetchRecords();
+    } catch (err: any) {
+      setSimError(err.message || 'Failed to simulate webhook.');
+    } finally {
+      setIsSimulating(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Header */}
@@ -40,34 +93,54 @@ export const TransactionsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
             <Receipt className="w-7 h-7 text-indigo-400" />
-            <span>Transactions & <span className="gradient-text">Active Orders</span></span>
+            <span>Transactions & <span className="gradient-text">Audit Ledger</span></span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Auditable ledger of PayPal Sandbox captures, fulfillment statuses, and merchant responses.
+            Auditable ledger of PayPal Sandbox captures, fulfillment statuses, and asynchronous webhook events.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setActiveTab('orders')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-              activeTab === 'orders'
-                ? 'bg-cyan-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={() => setShowSimModal(true)}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-linear-to-r from-amber-600 to-indigo-600 hover:opacity-95 shadow-md flex items-center gap-1.5 transition-all"
           >
-            Fulfilled Orders ({orders.length})
+            <Zap className="w-3.5 h-3.5" />
+            <span>Simulate PayPal Webhook</span>
           </button>
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
-              activeTab === 'payments'
-                ? 'bg-cyan-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            PayPal Payments ({payments.length})
-          </button>
+
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                activeTab === 'orders'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Fulfilled Orders ({orders.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                activeTab === 'payments'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              PayPal Payments ({payments.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('webhooks')}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-all ${
+                activeTab === 'webhooks'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Webhooks ({webhooks.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -126,7 +199,7 @@ export const TransactionsPage: React.FC = () => {
             ))}
           </div>
         )
-      ) : (
+      ) : activeTab === 'payments' ? (
         /* Payments View */
         payments.length === 0 ? (
           <div className="py-20 text-center bg-slate-900/60 border border-slate-800 rounded-3xl space-y-2">
@@ -184,6 +257,176 @@ export const TransactionsPage: React.FC = () => {
             </div>
           </div>
         )
+      ) : (
+        /* Webhooks View */
+        webhooks.length === 0 ? (
+          <div className="py-20 text-center bg-slate-900/60 border border-slate-800 rounded-3xl space-y-2">
+            <Radio className="w-10 h-10 text-slate-600 mx-auto" />
+            <h3 className="text-base font-bold text-white">No Webhook Events Logged</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Click "Simulate PayPal Webhook" above to trigger an asynchronous PayPal notification with deduplication checks.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-950/80 text-slate-400 font-mono uppercase text-[10px] border-b border-slate-800">
+                  <tr>
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">Event ID</th>
+                    <th className="py-3 px-4">Event Type</th>
+                    <th className="py-3 px-4">Summary</th>
+                    <th className="py-3 px-4">Processing State</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                  {webhooks.map((w) => (
+                    <tr key={w.id} className="hover:bg-slate-800/40 transition-colors">
+                      <td className="py-3 px-4 text-slate-400 font-mono">
+                        {new Date(w.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-cyan-300">
+                        {w.paypal_event_id}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-amber-300">
+                        {w.event_type}
+                      </td>
+                      <td className="py-3 px-4 text-slate-300 max-w-md truncate">
+                        {w.summary}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-500/30">
+                          {w.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      )}
+
+      {/* Webhook Event Simulator Modal */}
+      {showSimModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">PayPal Webhook Simulator</h3>
+                  <p className="text-xs text-slate-400">Dispatch asynchronous events and verify idempotency.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSimModal(false)}
+                className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {simError && (
+              <div className="p-3 bg-rose-950/40 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{simError}</span>
+              </div>
+            )}
+
+            {simResult && (
+              <div className="space-y-2 p-3.5 bg-slate-950/80 border border-emerald-500/30 rounded-xl text-xs">
+                <div className="flex items-center justify-between text-emerald-400 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4" /> Webhook Ingested & Verified
+                  </span>
+                  <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500/20">
+                    {simResult.status}
+                  </span>
+                </div>
+                <div className="font-mono text-[11px] text-slate-400 pt-1">
+                  <div>Event ID: <span className="text-cyan-300">{simResult.event_id}</span></div>
+                  <div>Event Type: <span className="text-amber-300">{simResult.event_type}</span></div>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSimulateWebhook} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-300">PayPal Event Type</label>
+                <select
+                  value={simEventType}
+                  onChange={(e) => setSimEventType(e.target.value)}
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
+                >
+                  <option value="PAYMENT.CAPTURE.COMPLETED">PAYMENT.CAPTURE.COMPLETED</option>
+                  <option value="PAYMENT.CAPTURE.DENIED">PAYMENT.CAPTURE.DENIED</option>
+                  <option value="PAYMENT.CAPTURE.PENDING">PAYMENT.CAPTURE.PENDING</option>
+                </select>
+                <span className="text-[10px] text-slate-500">Official PayPal Orders v2 Webhook Event Schema.</span>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-300">Simulated Amount ($ USD)</label>
+                <input
+                  type="text"
+                  value={simAmount}
+                  onChange={(e) => setSimAmount(e.target.value)}
+                  className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              {payments.length > 0 && (
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-300">Target Payment Record (Optional)</label>
+                  <select
+                    value={simTargetPaymentId}
+                    onChange={(e) => setSimTargetPaymentId(e.target.value)}
+                    className="w-full bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-mono"
+                  >
+                    <option value="">None (Generic Event)</option>
+                    {payments.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        Payment ${p.amount} ({p.id.slice(0, 8)}) - Current Status: {p.status}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowSimModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSimulating}
+                  className="px-6 py-2.5 rounded-xl text-xs font-semibold text-white bg-linear-to-r from-amber-600 to-indigo-600 hover:opacity-95 shadow-md flex items-center gap-2 transition-all"
+                >
+                  {isSimulating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Dispatching Event...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Dispatch Webhook</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -10,16 +10,20 @@ class ProviderBase(BaseModel):
     description: str
     category: str
     avatar_url: Optional[str] = None
-    rating: Decimal
-    review_count: int
+    rating: Decimal = Decimal("4.85")
+    review_count: int = 15
     starting_price: Decimal
     minimum_price: Decimal
-    currency: str
-    delivery_days: int
-    is_available: bool
-    is_verified: bool
+    currency: str = "USD"
+    delivery_days: int = 3
+    is_available: bool = True
+    is_verified: bool = True
     skills: Optional[str] = None
     portfolio_samples: Optional[str] = None
+
+
+class ProviderCreate(ProviderBase):
+    pass
 
 
 class ProviderResponse(ProviderBase):

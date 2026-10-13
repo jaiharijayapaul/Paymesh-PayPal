@@ -84,3 +84,102 @@ async def handle_paypal_webhook(request: Request, db: Session = Depends(get_db))
 
     db.commit()
     return {"status": "success", "event_id": event_id}
+
+
+from pydantic import BaseModel
+from typing import Optional
+import uuid
+from datetime import datetime, timezone
+
+
+class SimulateWebhookRequest(BaseModel):
+    event_type: str = "PAYMENT.CAPTURE.COMPLETED"
+    payment_id: Optional[str] = None
+    custom_approval_id: Optional[str] = None
+    amount: Optional[str] = "98.00"
+    currency: str = "USD"
+
+
+@router.post("/simulate", status_code=status.HTTP_200_OK)
+def simulate_paypal_webhook(req: SimulateWebhookRequest, db: Session = Depends(get_db)):
+    """Simulates an incoming PayPal asynchronous webhook notification with deduplication checks."""
+    event_id = f"WH-SIM-{uuid.uuid4().hex[:12].upper()}"
+    capture_id = f"CAP-SIM-{uuid.uuid4().hex[:8].upper()}"
+
+    # Build standard PayPal webhook resource
+    resource = {
+        "id": capture_id,
+        "status": "COMPLETED" if req.event_type == "PAYMENT.CAPTURE.COMPLETED" else "DENIED",
+        "amount": {
+            "value": req.amount or "98.00",
+            "currency_code": req.currency
+        },
+        "custom_id": req.custom_approval_id
+    }
+
+    event_payload = {
+        "id": event_id,
+        "event_version": "1.0",
+        "create_time": datetime.now(timezone.utc).isoformat(),
+        "resource_type": "capture",
+        "event_type": req.event_type,
+        "summary": f"Simulated {req.event_type} event verified and ingested.",
+        "resource": resource
+    }
+
+    body_str = json.dumps(event_payload)
+
+    # Check idempotency
+    existing = db.query(WebhookEvent).filter(WebhookEvent.paypal_event_id == event_id).first()
+    if existing:
+        return {"status": "duplicate_ignored", "event_id": event_id}
+
+    # Persist Webhook event record
+    webhook_record = WebhookEvent(
+        paypal_event_id=event_id,
+        event_type=req.event_type,
+        resource_type="capture",
+        summary=event_payload["summary"],
+        status="PROCESSED",
+        payload=body_str
+    )
+    db.add(webhook_record)
+
+    # Update payment if targeted
+    if req.payment_id:
+        p = db.query(Payment).filter(Payment.id == req.payment_id).first()
+        if p:
+            if req.event_type == "PAYMENT.CAPTURE.COMPLETED":
+                p.status = "COMPLETED"
+                p.paypal_capture_id = capture_id
+            elif req.event_type == "PAYMENT.CAPTURE.DENIED":
+                p.status = "DENIED"
+
+    db.commit()
+
+    return {
+        "status": "PROCESSED",
+        "event_id": event_id,
+        "event_type": req.event_type,
+        "capture_id": capture_id,
+        "summary": event_payload["summary"],
+        "payload": event_payload
+    }
+
+
+@router.get("/events")
+def list_webhook_events(db: Session = Depends(get_db)):
+    """Retrieves recent PayPal webhook audit ledger records."""
+    events = db.query(WebhookEvent).order_by(WebhookEvent.created_at.desc()).limit(20).all()
+    return [
+        {
+            "id": e.id,
+            "paypal_event_id": e.paypal_event_id,
+            "event_type": e.event_type,
+            "resource_type": e.resource_type,
+            "summary": e.summary,
+            "status": e.status,
+            "created_at": e.created_at.isoformat()
+        }
+        for e in events
+    ]

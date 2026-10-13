@@ -104,6 +104,11 @@ export const api = {
       return request<Provider[]>(`/providers?${q.toString()}`);
     },
     getProvider: (id: string) => request<Provider>(`/providers/${id}`),
+    createProvider: (data: Partial<Provider>) =>
+      request<Provider>('/providers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
   },
 
   // Offers
@@ -151,6 +156,7 @@ export const api = {
         currency: string;
         approval_id: string;
         client_id: string;
+        approval_url?: string;
       }>('/payments/create-order', {
         method: 'POST',
         body: JSON.stringify({ approval_id: approvalId }),
@@ -165,6 +171,40 @@ export const api = {
       }),
     list: () => request<Payment[]>('/payments'),
     listOrders: () => request<Order[]>('/payments/orders/list'),
+  },
+
+  // Webhooks
+  webhooks: {
+    simulate: (data: {
+      event_type: string;
+      payment_id?: string;
+      custom_approval_id?: string;
+      amount?: string;
+      currency?: string;
+    }) =>
+      request<{
+        status: string;
+        event_id: string;
+        event_type: string;
+        capture_id: string;
+        summary: string;
+        payload: any;
+      }>('/webhooks/simulate', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    listEvents: () =>
+      request<
+        Array<{
+          id: string;
+          paypal_event_id: string;
+          event_type: string;
+          resource_type: string;
+          summary: string;
+          status: string;
+          created_at: string;
+        }>
+      >('/webhooks/events'),
   },
 
   // Dashboard

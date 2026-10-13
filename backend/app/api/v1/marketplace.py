@@ -4,9 +4,25 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.provider import Provider
-from app.schemas.provider import ProviderResponse
+from app.schemas.provider import ProviderResponse, ProviderCreate
 
 router = APIRouter()
+
+
+@router.post("", response_model=ProviderResponse, status_code=status.HTTP_201_CREATED)
+def create_provider(provider_in: ProviderCreate, db: Session = Depends(get_db)):
+    """Onboards a new Service Provider / Merchant into the persistent database."""
+    if provider_in.minimum_price > provider_in.starting_price:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Minimum reserve price cannot exceed the starting price."
+        )
+
+    provider = Provider(**provider_in.model_dump())
+    db.add(provider)
+    db.commit()
+    db.refresh(provider)
+    return ProviderResponse.model_validate(provider)
 
 
 @router.get("", response_model=List[ProviderResponse])
