@@ -13,10 +13,13 @@ import { ApprovalsPage } from './pages/ApprovalsPage';
 import { TransactionsPage } from './pages/TransactionsPage';
 import { SettingsPage } from './pages/SettingsPage';
 
+import { ErrorBoundary } from './components/ErrorBoundary';
+
 export function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -39,6 +42,7 @@ export function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+  </ErrorBoundary>
   );
 }
 

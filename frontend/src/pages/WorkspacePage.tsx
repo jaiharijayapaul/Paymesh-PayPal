@@ -302,7 +302,7 @@ export const WorkspacePage: React.FC = () => {
                     <span className="text-slate-400 line-through">${currentOffer.original_price}</span>
                     <span className="font-bold text-emerald-400 text-sm">${currentOffer.final_price}</span>
                     <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 font-mono text-[11px]">
-                      Saved ${(currentOffer.original_price - currentOffer.final_price).toFixed(2)}
+                      Saved ${(Number(currentOffer.original_price) - Number(currentOffer.final_price)).toFixed(2)}
                     </span>
                   </div>
                 </div>

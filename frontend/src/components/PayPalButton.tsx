@@ -69,7 +69,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
         <div>
           <div className="text-xs text-slate-400">Total Authorized Amount</div>
           <div className="text-2xl font-bold text-white tracking-tight">
-            ${amount.toFixed(2)} <span className="text-sm font-normal text-cyan-400">{currency}</span>
+            ${Number(amount || 0).toFixed(2)} <span className="text-sm font-normal text-cyan-400">{currency}</span>
           </div>
         </div>
         <div className="text-right">
@@ -86,7 +86,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
           disabled={loading}
           className="w-full relative group overflow-hidden rounded-lg p-0.5 font-semibold text-sm transition-all shadow-lg hover:shadow-cyan-500/20"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-500 rounded-lg group-hover:opacity-90 transition-opacity" />
+          <div className="absolute inset-0 bg-linear-to-r from-violet-600 via-indigo-600 to-cyan-500 rounded-lg group-hover:opacity-90 transition-opacity" />
           <div className="relative px-5 py-3.5 bg-slate-950/40 rounded-[7px] flex items-center justify-center gap-3 text-white">
             {loading ? (
               <>
@@ -96,7 +96,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({
             ) : (
               <>
                 <CreditCard className="w-4 h-4 text-cyan-300" />
-                <span>Launch PayPal Sandbox Order (${amount.toFixed(2)})</span>
+                <span>Launch PayPal Sandbox Order (${Number(amount || 0).toFixed(2)})</span>
               </>
             )}
           </div>

@@ -107,10 +107,10 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-emerald-400">
-              ${summary ? summary.estimated_negotiated_savings.toFixed(2) : '0.00'}
+              ${summary ? Number(summary.estimated_negotiated_savings || 0).toFixed(2) : '0.00'}
             </span>
             <span className="text-xs text-emerald-300 font-mono">
-              ({summary ? summary.average_offer_discount_pct : 0}% avg)
+              ({summary ? Number(summary.average_offer_discount_pct || 0) : 0}% avg)
             </span>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">
@@ -128,7 +128,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-3xl font-bold text-white">
-              ${summary ? summary.total_sandbox_transaction_value.toFixed(2) : '0.00'}
+              ${summary ? Number(summary.total_sandbox_transaction_value || 0).toFixed(2) : '0.00'}
             </span>
             <span className="text-xs text-cyan-400 font-medium">
               {summary ? summary.completed_sandbox_payments : 0} orders
@@ -228,9 +228,9 @@ export const DashboardPage: React.FC = () => {
                       <Clock className="w-3 h-3" />
                       {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    {item.amount && (
+                    {item.amount !== undefined && item.amount !== null && (
                       <span className="text-xs font-bold text-emerald-400 block mt-1">
-                        ${item.amount.toFixed(2)}
+                        ${Number(item.amount).toFixed(2)}
                       </span>
                     )}
                   </div>
