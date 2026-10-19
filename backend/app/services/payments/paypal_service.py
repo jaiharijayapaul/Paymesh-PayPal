@@ -118,6 +118,12 @@ class PayPalService:
             }
         }
 
+        # Pre-flight APIMatic Schema Validation
+        from app.services.payments.apimatic_validator import APIMaticValidator
+        is_valid, val_msg = APIMaticValidator.validate_order_request(payload)
+        if not is_valid:
+            logger.warning(f"[APIMatic] Order payload validation warning: {val_msg}")
+
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 f"{settings.PAYPAL_BASE_URL}/v2/checkout/orders",

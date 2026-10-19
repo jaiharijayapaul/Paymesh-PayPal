@@ -20,6 +20,8 @@
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![PayPal Orders v2](https://img.shields.io/badge/PayPal-Sandbox%20Orders%20v2-003087?logo=paypal&logoColor=white)](https://developer.paypal.com)
+[![APIMatic](https://img.shields.io/badge/APIMatic-Context%20Plugin%20%26%20OpenAPI-0284C7?logo=openapi-initiative&logoColor=white)](apimatic/)
+[![AG Grid](https://img.shields.io/badge/AG%20Grid-Community%20v36-E02424?logo=databricks&logoColor=white)](https://ag-grid.com)
 
 </div>
 
@@ -100,12 +102,14 @@ sequenceDiagram
 
 ---
 
-## 4. Technology Stack
+## 4. Technology Stack & Sponsor Integrations
 
 - **Frontend**: React 18, Vite 6, TypeScript, Tailwind CSS, Lucide Icons, React Router v7.
+- **Enterprise Ledger (Sponsor: AG Grid)**: Powered by **AG Grid Community v36** (`ag-grid-react`) for high-performance financial auditing, multi-column sorting/filtering, custom cell badges, and instant CSV export.
+- **API Developer Experience (Sponsor: APIMatic)**: Automated PayPal Orders v2 contract validation and OpenAPI 3.0 schema compliance (`apimatic/paypal_orders_v2_spec.json`) via the **APIMatic Context Plugin & Validator**.
 - **Backend**: Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2.x, SQLite (zero-setup Windows) / PostgreSQL.
-- **Security**: JWT (`pyjwt`), password hashing (`bcrypt`), server-side policy authorization.
-- **Payments**: PayPal REST API (OAuth 2.0, Orders v2 `CAPTURE`, JavaScript SDK checkout, Webhooks).
+- **Security & Financial Guardrails**: JWT (`pyjwt`), password hashing (`bcrypt`), deterministic policy engine, SHA-256 verifiable receipts.
+- **Payments**: PayPal Developer Platform (REST Orders v2 `intent: CAPTURE`, OAuth 2.0 bearer credentials, Sandbox smart capture, Webhooks).
 - **Testing**: `pytest`, `pytest-asyncio`, `pytest-mock`, FastAPI `TestClient`.
 
 ---

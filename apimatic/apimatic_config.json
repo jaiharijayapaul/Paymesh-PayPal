@@ -1,0 +1,17 @@
+{
+  "apiName": "PayPal Orders v2 - PayMesh Autonomous Commerce",
+  "version": "2.0.0",
+  "generator": {
+    "language": "python",
+    "packageVersion": "2.0.0",
+    "packageName": "paypal_orders_v2_sdk",
+    "generatePydanticModels": true,
+    "strictValidation": true
+  },
+  "contextPlugin": {
+    "enabled": true,
+    "targetModels": ["OrderRequest", "PurchaseUnitRequest", "AmountWithBreakdown", "Order"],
+    "specFile": "./paypal_orders_v2_spec.json",
+    "telemetry": true
+  }
+}

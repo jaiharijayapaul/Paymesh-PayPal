@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { Payment, Order } from '../types';
 import {
+  ModuleRegistry,
+  AllCommunityModule,
+  themeQuartz,
+  colorSchemeDark,
+  ColDef,
+  GridApi,
+  GridReadyEvent,
+} from 'ag-grid-community';
+import { AgGridReact } from 'ag-grid-react';
+import {
   Receipt,
   PackageCheck,
   CreditCard,
@@ -14,9 +24,24 @@ import {
   Loader2,
   Terminal,
   Send,
-  Download
+  Download,
+  FileSpreadsheet,
+  Search,
+  Sparkles,
+  Table
 } from 'lucide-react';
 import { generatePaymentReceiptPDF } from '../utils/pdfReceipt';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
+const darkGridTheme = themeQuartz.withPart(colorSchemeDark).withParams({
+  backgroundColor: '#070b14',
+  foregroundColor: '#cbd5e1',
+  headerBackgroundColor: '#0f172a',
+  headerTextColor: '#94a3b8',
+  borderColor: '#1e293b',
+  rowHoverColor: '#1e293b88',
+});
 
 interface WebhookItem {
   id: string;
@@ -43,6 +68,130 @@ export const TransactionsPage: React.FC = () => {
   const [isSimulating, setIsSimulating] = useState(false);
   const [simResult, setSimResult] = useState<any | null>(null);
   const [simError, setSimError] = useState<string | null>(null);
+
+  // AG Grid State & Handlers
+  const [gridApi, setGridApi] = useState<GridApi<Payment> | null>(null);
+  const [quickFilter, setQuickFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'ag-grid' | 'standard'>('ag-grid');
+
+  const onQuickFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuickFilter(val);
+    if (gridApi) {
+      gridApi.setGridOption('quickFilterText', val);
+    }
+  };
+
+  const handleExportCsv = () => {
+    if (gridApi) {
+      gridApi.exportDataAsCsv({
+        fileName: `paymesh_settlements_${new Date().toISOString().slice(0, 10)}.csv`,
+      });
+    }
+  };
+
+  const paymentColDefs: ColDef<Payment>[] = [
+    {
+      field: 'created_at',
+      headerName: 'Settlement Time',
+      sortable: true,
+      filter: true,
+      minWidth: 170,
+      valueFormatter: (p) =>
+        p.value
+          ? `${new Date(p.value).toLocaleDateString()} ${new Date(p.value).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}`
+          : '—',
+    },
+    {
+      field: 'amount',
+      headerName: 'Amount',
+      sortable: true,
+      filter: 'agNumberColumnFilter',
+      minWidth: 130,
+      valueFormatter: (p) => `$${Number(p.value || 0).toFixed(2)} ${p.data?.currency || 'USD'}`,
+      cellClass: 'font-semibold text-white',
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      sortable: true,
+      filter: true,
+      minWidth: 130,
+      cellRenderer: (p: any) => {
+        const isComp = p.value === 'COMPLETED';
+        return (
+          <span
+            className={`inline-block px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold ${
+              isComp
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+            }`}
+          >
+            {p.value}
+          </span>
+        );
+      },
+    },
+    {
+      field: 'paypal_order_id',
+      headerName: 'PayPal Order ID',
+      sortable: true,
+      filter: true,
+      minWidth: 180,
+      cellRenderer: (p: any) => (
+        <span className="font-mono text-cyan-400 text-xs">{p.value || '—'}</span>
+      ),
+    },
+    {
+      field: 'paypal_capture_id',
+      headerName: 'PayPal Capture ID',
+      sortable: true,
+      filter: true,
+      minWidth: 180,
+      cellRenderer: (p: any) => (
+        <span className="font-mono text-slate-400 text-xs">{p.value || '—'}</span>
+      ),
+    },
+    {
+      field: 'payer_email',
+      headerName: 'Payer Account',
+      sortable: true,
+      filter: true,
+      minWidth: 190,
+      valueGetter: (p) => p.data?.payer_email || 'sandbox-buyer@paymesh.ai',
+    },
+    {
+      headerName: 'Audit Receipt',
+      minWidth: 160,
+      sortable: false,
+      filter: false,
+      cellRenderer: (p: any) => {
+        const payment = p.data;
+        if (!payment || payment.status !== 'COMPLETED') {
+          return <span className="text-slate-600 text-xs">—</span>;
+        }
+        return (
+          <button
+            onClick={async () => {
+              try {
+                const receipt = await api.payments.getReceipt(payment.id);
+                generatePaymentReceiptPDF(receipt);
+              } catch (e) {
+                console.error('Receipt download failed:', e);
+              }
+            }}
+            className="px-2.5 py-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] inline-flex items-center gap-1.5 transition-colors"
+          >
+            <Download className="w-3 h-3" />
+            <span>Download PDF</span>
+          </button>
+        );
+      },
+    },
+  ];
 
   const fetchRecords = async () => {
     try {
@@ -228,72 +377,160 @@ export const TransactionsPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950/80 text-slate-400 font-mono uppercase text-[10px] border-b border-slate-800">
-                  <tr>
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">PayPal Order ID</th>
-                    <th className="py-3 px-4">PayPal Capture ID</th>
-                    <th className="py-3 px-4">Buyer Payer</th>
-                    <th className="py-3 px-4 text-right">Official Receipt</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                  {payments.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4 text-slate-400 font-mono">
-                        {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="py-3 px-4 font-bold text-white">
-                        ${p.amount} {p.currency}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
-                          p.status === 'COMPLETED'
-                            ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
-                        }`}>
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 font-mono text-cyan-300">
-                        {p.paypal_order_id || '—'}
-                      </td>
-                      <td className="py-3 px-4 font-mono text-slate-400">
-                        {p.paypal_capture_id || '—'}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400">
-                        {p.payer_email || 'sandbox-buyer@paymesh.ai'}
-                      </td>
-                      <td className="py-3 px-4 text-right">
-                        {p.status === 'COMPLETED' ? (
-                          <button
-                            onClick={async () => {
-                              try {
-                                const receipt = await api.payments.getReceipt(p.id);
-                                generatePaymentReceiptPDF(receipt);
-                              } catch (e) {
-                                console.error('Receipt download failed:', e);
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors"
-                          >
-                            <Download className="w-3 h-3" />
-                            <span>PDF</span>
-                          </button>
-                        ) : (
-                          <span className="text-slate-600">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="space-y-4">
+            {/* AG Grid Controls Header */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-linear-to-r from-cyan-950 to-indigo-950 border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>AG Grid Community v36</span>
+                </div>
+                <span className="text-xs text-slate-400 hidden sm:inline">
+                  {payments.length} {payments.length === 1 ? 'record' : 'records'} indexed
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Search / Quick Filter */}
+                <div className="relative flex-1 sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={quickFilter}
+                    onChange={onQuickFilterChange}
+                    placeholder="Search ledger..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-cyan-500 transition-colors"
+                  />
+                </div>
+
+                {/* Export CSV Button */}
+                <button
+                  onClick={handleExportCsv}
+                  className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
+                  title="Export to CSV"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Export CSV</span>
+                </button>
+
+                {/* View Mode Switcher */}
+                <div className="flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-xs">
+                  <button
+                    onClick={() => setViewMode('ag-grid')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                      viewMode === 'ag-grid'
+                        ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    AG Grid
+                  </button>
+                  <button
+                    onClick={() => setViewMode('standard')}
+                    className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                      viewMode === 'standard'
+                        ? 'bg-cyan-500 text-slate-950 font-semibold shadow-xs'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                </div>
+              </div>
             </div>
+
+            {viewMode === 'ag-grid' ? (
+              /* AG Grid Interactive View */
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl p-2">
+                <div style={{ height: 440, width: '100%' }}>
+                  <AgGridReact<Payment>
+                    theme={darkGridTheme}
+                    rowData={payments}
+                    columnDefs={paymentColDefs}
+                    pagination={true}
+                    paginationPageSize={10}
+                    paginationPageSizeSelector={[10, 25, 50]}
+                    onGridReady={(params: GridReadyEvent<Payment>) => {
+                      setGridApi(params.api);
+                      params.api.sizeColumnsToFit();
+                    }}
+                    defaultColDef={{
+                      resizable: true,
+                      sortable: true,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Standard Table View */
+              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-950/80 text-slate-400 font-mono uppercase text-[10px] border-b border-slate-800">
+                      <tr>
+                        <th className="py-3 px-4">Timestamp</th>
+                        <th className="py-3 px-4">Amount</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">PayPal Order ID</th>
+                        <th className="py-3 px-4">PayPal Capture ID</th>
+                        <th className="py-3 px-4">Buyer Payer</th>
+                        <th className="py-3 px-4 text-right">Official Receipt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                      {payments.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3 px-4 text-slate-400 font-mono">
+                            {new Date(p.created_at).toLocaleDateString()} {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="py-3 px-4 font-bold text-white">
+                            ${p.amount} {p.currency}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${
+                              p.status === 'COMPLETED'
+                                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+                            }`}>
+                              {p.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-cyan-300">
+                            {p.paypal_order_id || '—'}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-slate-400">
+                            {p.paypal_capture_id || '—'}
+                          </td>
+                          <td className="py-3 px-4 text-slate-400">
+                            {p.payer_email || 'sandbox-buyer@paymesh.ai'}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {p.status === 'COMPLETED' ? (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const receipt = await api.payments.getReceipt(p.id);
+                                    generatePaymentReceiptPDF(receipt);
+                                  } catch (e) {
+                                    console.error('Receipt download failed:', e);
+                                  }
+                                }}
+                                className="px-2.5 py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>PDF</span>
+                              </button>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )
       ) : (
