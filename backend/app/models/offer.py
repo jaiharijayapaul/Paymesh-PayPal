@@ -1,9 +1,15 @@
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from sqlalchemy import String, Numeric, Integer, Text, ForeignKey, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.models.task import Task
+    from app.models.provider import Provider
+    from app.models.approval import Approval
 
 
 class Offer(Base):

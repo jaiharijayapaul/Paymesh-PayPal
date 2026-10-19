@@ -60,7 +60,7 @@ export const AgentTimeline: React.FC<AgentTimelineProps> = ({ actions, taskStatu
           No agent actions recorded yet. Launch the task pipeline to begin autonomous orchestration.
         </div>
       ) : (
-        <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-violet-500 before:via-cyan-500 before:to-emerald-500">
+        <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-linear-to-b before:from-violet-500 before:via-cyan-500 before:to-emerald-500">
           {actions.map((action, idx) => (
             <div key={action.id || idx} className="relative group">
               {/* Dot Icon */}
