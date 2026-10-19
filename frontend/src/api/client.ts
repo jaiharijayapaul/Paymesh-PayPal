@@ -9,7 +9,8 @@ import {
   Order,
   DashboardSummary,
   DashboardActivityItem,
-  AgentAction
+  AgentAction,
+  ReceiptManifest
 } from '../types';
 
 const formatApiUrl = () => {
@@ -89,6 +90,30 @@ export const api = {
       request<Task>(`/tasks/${id}/execute`, {
         method: 'POST',
       }),
+    stream: (taskId: string, onEvent: (event: any) => void, onError?: (err: any) => void) => {
+      const token = localStorage.getItem('paymesh_token');
+      const url = `${BASE_URL}/tasks/${taskId}/stream?token=${encodeURIComponent(token || '')}`;
+      const eventSource = new EventSource(url);
+
+      eventSource.onmessage = (e) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          onEvent(parsed);
+          if (parsed.event === 'PIPELINE_COMPLETE' || parsed.event === 'STEP_FAILED') {
+            eventSource.close();
+          }
+        } catch (err) {
+          console.error('Failed to parse SSE event:', err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        eventSource.close();
+        if (onError) onError(err);
+      };
+
+      return () => eventSource.close();
+    },
     getTimeline: (id: string) =>
       request<{ task_id: string; status: string; actions: AgentAction[] }>(`/tasks/${id}/timeline`),
   },
@@ -114,6 +139,10 @@ export const api = {
   // Offers
   offers: {
     listForTask: (taskId: string) => request<Offer[]>(`/tasks/${taskId}/offers`),
+    select: (offerId: string) =>
+      request<Offer>(`/offers/${offerId}/select`, {
+        method: 'POST',
+      }),
     counterNegotiate: (offerId: string, data: { target_price: number; user_message?: string }) =>
       request<Offer>(`/offers/${offerId}/negotiate`, {
         method: 'POST',
@@ -171,6 +200,8 @@ export const api = {
       }),
     list: () => request<Payment[]>('/payments'),
     listOrders: () => request<Order[]>('/payments/orders/list'),
+    getReceipt: (paymentId: string) =>
+      request<ReceiptManifest>(`/payments/${paymentId}/receipt`),
   },
 
   // Webhooks

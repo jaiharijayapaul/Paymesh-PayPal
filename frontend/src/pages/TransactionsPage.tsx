@@ -13,8 +13,10 @@ import {
   X,
   Loader2,
   Terminal,
-  Send
+  Send,
+  Download
 } from 'lucide-react';
+import { generatePaymentReceiptPDF } from '../utils/pdfReceipt';
 
 interface WebhookItem {
   id: string;
@@ -191,9 +193,25 @@ export const TransactionsPage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500">
-                  <span>Created: {new Date(order.created_at).toLocaleString()}</span>
-                  <span className="font-mono text-cyan-400">Payment ID: {order.payment_id.slice(0, 8)}</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-800/60">
+                  <div className="flex items-center gap-3">
+                    <span>Created: {new Date(order.created_at).toLocaleString()}</span>
+                    <span className="font-mono text-cyan-400">Payment ID: {order.payment_id.slice(0, 8)}</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const receipt = await api.payments.getReceipt(order.payment_id);
+                        generatePaymentReceiptPDF(receipt);
+                      } catch (e) {
+                        console.error('Receipt download failed:', e);
+                      }
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] inline-flex items-center gap-1.5 transition-colors"
+                  >
+                    <Download className="w-3 h-3" />
+                    <span>Download PDF Receipt</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -221,6 +239,7 @@ export const TransactionsPage: React.FC = () => {
                     <th className="py-3 px-4">PayPal Order ID</th>
                     <th className="py-3 px-4">PayPal Capture ID</th>
                     <th className="py-3 px-4">Buyer Payer</th>
+                    <th className="py-3 px-4 text-right">Official Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/80 text-slate-300">
@@ -249,6 +268,26 @@ export const TransactionsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-slate-400">
                         {p.payer_email || 'sandbox-buyer@paymesh.ai'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {p.status === 'COMPLETED' ? (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const receipt = await api.payments.getReceipt(p.id);
+                                generatePaymentReceiptPDF(receipt);
+                              } catch (e) {
+                                console.error('Receipt download failed:', e);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] inline-flex items-center gap-1 transition-colors"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>PDF</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-600">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}

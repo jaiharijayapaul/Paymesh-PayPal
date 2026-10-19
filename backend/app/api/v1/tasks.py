@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.user import User
@@ -8,7 +9,8 @@ from app.models.agent import AgentAction
 from app.schemas.task import TaskCreate, TaskResponse, TaskTimelineResponse, AgentActionResponse
 from app.services.agents.intent_agent import IntentAgent
 from app.services.agents.orchestrator import AgentOrchestrator
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_with_query
+
 
 router = APIRouter()
 
@@ -91,3 +93,27 @@ def get_task_timeline(
         status=task.status,
         actions=[AgentActionResponse.model_validate(a) for a in actions]
     )
+
+
+@router.get("/{task_id}/stream")
+async def stream_task_workflow(
+    task_id: str,
+    token: Optional[str] = None,
+    current_user: User = Depends(get_current_user_with_query),
+    db: Session = Depends(get_db)
+):
+    """Server-Sent Events (SSE) live stream of autonomous multi-agent pipeline execution."""
+    task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found or unauthorized.")
+
+    return StreamingResponse(
+        AgentOrchestrator.stream_task_pipeline(db, current_user, task),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+

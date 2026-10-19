@@ -42,6 +42,23 @@ DEMO_PROVIDERS = [
         "skills": json.dumps(["Figma", "SVG Mastery", "App Icons"]),
         "portfolio_samples": json.dumps(["HealthTech App Icon", "DeFi Exchange Emblem"])
     },
+    {
+        "name": "PixelCraft Studios",
+        "tagline": "Modern Geometric & Vector Startup Logos",
+        "description": "Specialized boutique design firm crafting precision vector brand marks, monochrome icons, and distinctive emblem typography.",
+        "category": "logo_design",
+        "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+        "rating": Decimal("4.85"),
+        "review_count": 89,
+        "starting_price": Decimal("105.00"),
+        "minimum_price": Decimal("82.00"),
+        "currency": "USD",
+        "delivery_days": 3,
+        "is_available": True,
+        "is_verified": True,
+        "skills": json.dumps(["Logo Design", "Typography", "Illustrator", "Brand Kits"]),
+        "portfolio_samples": json.dumps(["Fintech Logo Kit", "AI SaaS Mark"])
+    },
     # Web Development
     {
         "name": "ByteCraft Engineering",

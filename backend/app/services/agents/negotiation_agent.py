@@ -10,8 +10,9 @@ from app.models.offer import Offer, Negotiation
 class NegotiationAgent:
     """Coordinates simulated negotiation rounds between the Buyer Personal Agent and the Provider Merchant Agent."""
 
-    @staticmethod
+    @classmethod
     def initiate_negotiation(
+        cls,
         db: Session,
         task: Task,
         provider: Provider
@@ -45,7 +46,23 @@ class NegotiationAgent:
         db.add(offer)
         db.flush()
 
-        negotiation_rounds = []
+        rounds = cls._simulate_negotiation_rounds(db, offer, task, provider)
+        db.flush()
+        return offer, rounds
+
+    @classmethod
+    def _simulate_negotiation_rounds(
+        cls,
+        db: Session,
+        offer: Offer,
+        task: Task,
+        provider: Provider
+    ) -> list[Negotiation]:
+        initial_price = provider.starting_price
+        user_budget = task.max_budget
+        min_reserve = provider.minimum_price
+
+        negotiation_rounds: list[Negotiation] = []
 
         # Round 1: Provider Merchant presents catalog price
         r1 = Negotiation(
@@ -75,7 +92,6 @@ class NegotiationAgent:
             negotiation_rounds.append(r2)
 
             # Round 3: Merchant Agent considers floor and counters or accepts
-            # E.g., if initial was $110, user max $100, floor $85 -> counter at $98
             simulated_final = max(min_reserve, min(user_budget - Decimal("2.00"), initial_price - Decimal("12.00")))
             if simulated_final > user_budget:
                 simulated_final = user_budget
@@ -133,8 +149,110 @@ class NegotiationAgent:
             else:
                 offer.final_price = initial_price
 
+        return negotiation_rounds
+
+    @classmethod
+    def conduct_competitive_bidding(
+        cls,
+        db: Session,
+        task: Task,
+        providers: list[Provider]
+    ) -> Tuple[Offer, list[Offer], list[Negotiation], dict]:
+        """Conducts concurrent multi-agent negotiation rounds with multiple competing providers,
+
+        scores each final counteroffer across savings, SLA, and provider rating, and crowns the winning bid.
+        """
+        # Invalidate existing offers for this task
+        existing_offers = db.query(Offer).filter(Offer.task_id == task.id).all()
+        for eo in existing_offers:
+            eo.status = "SUPERSEDED"
         db.flush()
-        return offer, negotiation_rounds
+
+        all_offers: list[Offer] = []
+        all_rounds: list[Negotiation] = []
+        bid_summaries: list[dict] = []
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=48)
+
+        for provider in providers:
+            offer = Offer(
+                task_id=task.id,
+                provider_id=provider.id,
+                version=1,
+                original_price=provider.starting_price,
+                final_price=provider.starting_price,
+                currency=task.currency,
+                delivery_days=min(provider.delivery_days, task.deadline_days),
+                scope_summary=f"Full {task.title} deliverable by {provider.name} including source files, revisions, and commercial licensing.",
+                status="COMPETITIVE_BID",
+                expires_at=expires_at
+            )
+            db.add(offer)
+            db.flush()
+
+            rounds = cls._simulate_negotiation_rounds(db, offer, task, provider)
+            all_offers.append(offer)
+            all_rounds.extend(rounds)
+
+            savings = offer.original_price - offer.final_price
+            savings_pct = float((savings / offer.original_price) * Decimal("100.00")) if offer.original_price > 0 else 0.0
+            rating_val = float(provider.rating)
+            headroom = max(Decimal("0.00"), task.max_budget - offer.final_price)
+            delivery_penalty = float(offer.delivery_days) * 2.5
+
+            # Multi-attribute utility score for arbitration
+            competitive_score = (
+                (rating_val * 12.0) +
+                (min(30.0, savings_pct * 1.5)) +
+                (float(headroom) * 0.8) -
+                delivery_penalty
+            )
+
+            bid_summaries.append({
+                "offer": offer,
+                "provider": provider,
+                "original_price": str(offer.original_price),
+                "final_price": str(offer.final_price),
+                "savings": str(savings),
+                "savings_pct": round(savings_pct, 1),
+                "delivery_days": offer.delivery_days,
+                "rating": str(provider.rating),
+                "competitive_score": round(competitive_score, 2)
+            })
+
+        # Rank bids by competitive utility score
+        bid_summaries.sort(key=lambda b: b["competitive_score"], reverse=True)
+        winner_summary = bid_summaries[0]
+        winner_offer = winner_summary["offer"]
+        winner_offer.status = "PROPOSED"
+        db.flush()
+
+        metadata = {
+            "bids_evaluated": len(all_offers),
+            "winner_offer_id": winner_offer.id,
+            "winner_provider_name": winner_offer.provider.name,
+            "winner_score": winner_summary["competitive_score"],
+            "total_savings": winner_summary["savings"],
+            "savings_pct": winner_summary["savings_pct"],
+            "comparisons": [
+                {
+                    "offer_id": b["offer"].id,
+                    "provider_id": b["provider"].id,
+                    "provider_name": b["provider"].name,
+                    "original_price": b["original_price"],
+                    "final_price": b["final_price"],
+                    "savings": b["savings"],
+                    "savings_pct": b["savings_pct"],
+                    "delivery_days": b["delivery_days"],
+                    "rating": b["rating"],
+                    "score": b["competitive_score"],
+                    "is_winner": (b["offer"].id == winner_offer.id)
+                }
+                for b in bid_summaries
+            ]
+        }
+
+        return winner_offer, all_offers, all_rounds, metadata
+
 
     @staticmethod
     def counter_negotiate(

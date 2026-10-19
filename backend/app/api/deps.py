@@ -48,3 +48,19 @@ def get_optional_current_user(
         return get_current_user(db, token)
     except HTTPException:
         return None
+
+
+def get_current_user_with_query(
+    token: Optional[str] = None,
+    auth_header_token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    effective_token = auth_header_token or token
+    if not effective_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token required via header or query parameter",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return get_current_user(db, effective_token)
+

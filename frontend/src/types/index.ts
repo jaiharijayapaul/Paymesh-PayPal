@@ -102,7 +102,7 @@ export interface Offer {
   currency: string;
   delivery_days: number;
   scope_summary: string;
-  status: 'DRAFT' | 'PROPOSED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'SUPERSEDED';
+  status: 'DRAFT' | 'PROPOSED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'SUPERSEDED' | 'COMPETITIVE_BID';
   expires_at: string;
   created_at: string;
   provider: Provider;
@@ -189,3 +189,50 @@ export interface DashboardActivityItem {
   task_id?: string;
   amount?: number;
 }
+
+export interface ReceiptManifest {
+  receipt_number: string;
+  verification_hash: string;
+  verification_qr_payload: string;
+  settled_at: string;
+  status: string;
+  payment: {
+    id: string;
+    paypal_order_id?: string;
+    paypal_capture_id?: string;
+    amount: string;
+    currency: string;
+  };
+  payer: {
+    id: string;
+    full_name: string;
+    email: string;
+  };
+  task: {
+    id: string | null;
+    title: string;
+    service_category: string;
+    max_budget: string;
+  };
+  provider: {
+    id: string;
+    name: string;
+    tagline: string;
+    rating: string;
+    delivery_days: number;
+  };
+  financial_breakdown: {
+    original_catalog_price: string;
+    final_negotiated_price: string;
+    savings_amount: string;
+    savings_percent: number;
+    currency: string;
+  };
+  security_policy_proof: {
+    policy_check_passed: boolean;
+    checks_enforced: string[];
+    human_authorization_confirmed: boolean;
+    gateway: string;
+  };
+}
+
